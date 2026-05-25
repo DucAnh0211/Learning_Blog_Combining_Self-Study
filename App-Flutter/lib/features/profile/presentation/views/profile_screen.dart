@@ -6,9 +6,26 @@ import 'package:fe_mobile/features/community/presentation/views/other_profile_sc
 import 'package:fe_mobile/features/onboarding/presentation/views/subject_onboarding_view.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:fe_mobile/features/community/presentation/widgets/post_card_widget.dart';
+import 'package:fe_mobile/features/profile/presentation/widgets/study_heatmap_widget.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Tải thống kê học tập khi màn hình Profile được mở
+    Future.microtask(() {
+      if (mounted) {
+        context.read<ProfileViewModel>().fetchStudyStats();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -146,6 +163,24 @@ class ProfileScreen extends StatelessWidget {
                       ),
                     ],
                   ),
+                ),
+                const SizedBox(height: 24),
+
+                // Biểu đồ đóng góp tự học kiểu GitHub
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: profileVM.isStatsLoading
+                      ? const Center(
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(vertical: 24),
+                            child: CircularProgressIndicator(color: primaryColor),
+                          ),
+                        )
+                      : StudyHeatmapWidget(
+                          dailyStats: profileVM.studyStats,
+                          totalSessions: profileVM.totalSessions,
+                          totalDurationMinutes: profileVM.totalDurationMinutes,
+                        ),
                 ),
                 const SizedBox(height: 24),
 

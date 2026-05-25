@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fe_mobile/features/auth/data/services/auth_service.dart';
+import 'package:fe_mobile/core/network/api_client.dart';
 
 class ProfileViewModel extends ChangeNotifier {
   final AuthService _authService = AuthService();
@@ -8,12 +9,43 @@ class ProfileViewModel extends ChangeNotifier {
   Map<String, dynamic>? _user;
   bool _isLoading = true;
 
+  // Trạng thái thống kê tự học
+  List<dynamic> _studyStats = [];
+  int _totalSessions = 0;
+  int _totalDurationMinutes = 0;
+  bool _isStatsLoading = false;
+
   bool get isLoggedIn => _isLoggedIn;
   Map<String, dynamic>? get user => _user;
   bool get isLoading => _isLoading;
+  List<dynamic> get studyStats => _studyStats;
+  int get totalSessions => _totalSessions;
+  int get totalDurationMinutes => _totalDurationMinutes;
+  bool get isStatsLoading => _isStatsLoading;
 
   ProfileViewModel() {
     checkAuthStatus();
+  }
+
+  // Tải thống kê tự học 365 ngày
+  Future<void> fetchStudyStats() async {
+    _isStatsLoading = true;
+    notifyListeners();
+
+    try {
+      final ApiClient apiClient = ApiClient();
+      final response = await apiClient.dio.get('/SelfLearn/stats', queryParameters: {'days': 365});
+      if (response.statusCode == 200) {
+        _studyStats = response.data['dailyStats'] ?? [];
+        _totalSessions = response.data['totalSessions'] ?? 0;
+        _totalDurationMinutes = response.data['totalDurationMinutes'] ?? 0;
+      }
+    } catch (e) {
+      debugPrint('Lỗi tải thống kê học tập: $e');
+    } finally {
+      _isStatsLoading = false;
+      notifyListeners();
+    }
   }
 
   // Kiểm tra xem đã có token lưu chưa và lấy thông tin user
