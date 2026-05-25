@@ -119,6 +119,7 @@ builder.Services.AddScoped<IUserActivityLogService, UserActivityLogService>();
 builder.Services.AddScoped<IStatisticsService, StatisticsService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IRealtimeNotificationService, backend_assignment_and_management_project.API.Services.RealtimeNotificationService>();
+builder.Services.AddSingleton<IFirebaseService, FirebaseService>();
 builder.Services.AddHostedService<DeadlineNotificationService>();
 
 var app = builder.Build();
@@ -151,6 +152,44 @@ using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     context.Database.EnsureCreated();
+
+    // 0. Cập nhật Schema cho các bảng (Thêm các cột mới nếu chưa có trước khi truy vấn dữ liệu)
+    Console.WriteLine($"[STARTUP] Active DB Provider: {context.Database.ProviderName}");
+    if (context.Database.IsRelational())
+    {
+        await context.Database.ExecuteSqlRawAsync(@"
+            DO $$ 
+            BEGIN 
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='notifications' AND column_name='type') THEN
+                    ALTER TABLE notifications ADD COLUMN type VARCHAR(50) DEFAULT 'System';
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='notifications' AND column_name='target_id') THEN
+                    ALTER TABLE notifications ADD COLUMN target_id UUID;
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='notifications' AND column_name='actor_id') THEN
+                    ALTER TABLE notifications ADD COLUMN actor_id UUID;
+                END IF;
+                
+                -- Thêm cột level và points cho bảng users nếu chưa có
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='level') THEN
+                    ALTER TABLE users ADD COLUMN level INTEGER DEFAULT 1;
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='points') THEN
+                    ALTER TABLE users ADD COLUMN points INTEGER DEFAULT 0;
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='fcm_token') THEN
+                    ALTER TABLE users ADD COLUMN fcm_token VARCHAR(500);
+                END IF;
+                
+                -- Tạo bảng user_follows nếu chưa có
+                CREATE TABLE IF NOT EXISTS user_follows (
+                    follower_id UUID NOT NULL,
+                    following_id UUID NOT NULL,
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (follower_id, following_id)
+                );
+            END $$;");
+    };
 
     // 1. Seed Roles
     if (!context.Roles.Any())
@@ -186,41 +225,6 @@ using (var scope = app.Services.CreateScope())
 
     // 4. Seed Posts (Commented out to stop mock data generation)
     // await DbInitializer.SeedPosts(context, adminUser);
-
-    // 5. Cập nhật Schema cho Notifications & Gamification (Thêm cột mới nếu chưa có)
-    Console.WriteLine($"[STARTUP] Active DB Provider: {context.Database.ProviderName}");
-    if (context.Database.IsRelational())
-    {
-        await context.Database.ExecuteSqlRawAsync(@"
-            DO $$ 
-            BEGIN 
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='notifications' AND column_name='type') THEN
-                    ALTER TABLE notifications ADD COLUMN type VARCHAR(50) DEFAULT 'System';
-                END IF;
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='notifications' AND column_name='target_id') THEN
-                    ALTER TABLE notifications ADD COLUMN target_id UUID;
-                END IF;
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='notifications' AND column_name='actor_id') THEN
-                    ALTER TABLE notifications ADD COLUMN actor_id UUID;
-                END IF;
-                
-                -- Thêm cột level và points cho bảng users nếu chưa có
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='level') THEN
-                    ALTER TABLE users ADD COLUMN level INTEGER DEFAULT 1;
-                END IF;
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='points') THEN
-                    ALTER TABLE users ADD COLUMN points INTEGER DEFAULT 0;
-                END IF;
-                
-                -- Tạo bảng user_follows nếu chưa có
-                CREATE TABLE IF NOT EXISTS user_follows (
-                    follower_id UUID NOT NULL,
-                    following_id UUID NOT NULL,
-                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-                    PRIMARY KEY (follower_id, following_id)
-                );
-            END $$;");
-    };
 }
 
 app.Run();

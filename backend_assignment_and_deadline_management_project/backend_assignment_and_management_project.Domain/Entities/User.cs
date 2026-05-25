@@ -27,6 +27,9 @@ namespace backend_assignment_and_management_project.Domain.Entities
         [Column("avatar_url")]
         public string? AvatarUrl { get; set; }
 
+        [Column("fcm_token")]
+        public string? FcmToken { get; set; }
+
         [Column("points")]
         public int Points { get; set; } = 0;
 

@@ -11,15 +11,18 @@ namespace backend_assignment_and_management_project.Infrastructure.Services
         private readonly ApplicationDbContext _context;
         private readonly IStorageService _storageService;
         private readonly IRealtimeNotificationService _realtimeNotificationService;
+        private readonly IFirebaseService _firebaseService;
 
         public NotificationService(
             ApplicationDbContext context, 
             IStorageService storageService,
-            IRealtimeNotificationService realtimeNotificationService)
+            IRealtimeNotificationService realtimeNotificationService,
+            IFirebaseService firebaseService)
         {
             _context = context;
             _storageService = storageService;
             _realtimeNotificationService = realtimeNotificationService;
+            _firebaseService = firebaseService;
         }
 
         public async Task CreateNotificationAsync(Guid userId, string title, string content, string type, Guid? targetId = null, Guid? actorId = null)
@@ -68,6 +71,19 @@ namespace backend_assignment_and_management_project.Infrastructure.Services
 
             // Trigger real-time push via SignalR
             await _realtimeNotificationService.SendNotificationToUserAsync(userId, dto);
+
+            // Fetch user's FCM token and trigger push notification
+            var user = await _context.Users.FindAsync(userId);
+            if (user != null && !string.IsNullOrEmpty(user.FcmToken))
+            {
+                await _firebaseService.SendPushNotificationAsync(
+                    user.FcmToken,
+                    notification.Title,
+                    notification.Content,
+                    notification.Type,
+                    notification.TargetId?.ToString()
+                );
+            }
         }
 
         public async Task<IEnumerable<NotificationDto>> GetUserNotificationsAsync(Guid userId)
@@ -120,6 +136,16 @@ namespace backend_assignment_and_management_project.Infrastructure.Services
             }
 
             await _context.SaveChangesAsync();
+        }
+
+        public async Task RegisterFcmTokenAsync(Guid userId, string token)
+        {
+            var user = await _context.Users.FindAsync(userId);
+            if (user != null)
+            {
+                user.FcmToken = token;
+                await _context.SaveChangesAsync();
+            }
         }
     }
 }

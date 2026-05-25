@@ -15,4 +15,9 @@ namespace backend_assignment_and_management_project.Application.DTOs
         public bool IsRead { get; set; }
         public DateTime CreatedAt { get; set; }
     }
+
+    public class RegisterFcmTokenDto
+    {
+        public string Token { get; set; } = string.Empty;
+    }
 }

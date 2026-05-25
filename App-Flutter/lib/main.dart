@@ -13,6 +13,7 @@ import 'package:fe_mobile/features/profile/presentation/viewmodels/profile_viewm
 import 'package:fe_mobile/features/notifications/presentation/providers/notification_provider.dart';
 import 'package:fe_mobile/features/notifications/data/repositories/notification_repository.dart';
 import 'package:fe_mobile/core/network/api_client.dart';
+import 'package:fe_mobile/core/services/firebase_messaging_service.dart';
 
 // --- IMPORT VIEWS ---
 import 'package:fe_mobile/features/community/presentation/views/feed_screen.dart';
@@ -98,6 +99,11 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
       
       // 1. Tải danh sách thông báo từ API trước
       await context.read<NotificationProvider>().fetchNotifications();
+
+      // Khởi tạo Firebase Messaging và đăng ký Token với Backend
+      final fcmService = FirebaseMessagingService();
+      await fcmService.initialize();
+      await fcmService.registerTokenWithBackend();
       
       // 2. Lấy auth_token từ SharedPreferences để kết nối SignalR
       final prefs = await SharedPreferences.getInstance();
@@ -187,7 +193,35 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
         ),
         child: BottomNavigationBar(
           currentIndex: _currentIndex,
-          onTap: (index) => setState(() => _currentIndex = index),
+          onTap: (index) {
+            final focusVM = context.read<FocusViewModel>();
+            if (focusVM.isCountdownRunning || focusVM.isStopwatchRunning) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Row(
+                    children: const [
+                      Icon(Icons.warning_amber_rounded, color: Colors.white),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Bạn đang trong phiên tập trung! Vui lòng dừng hoặc hủy phiên để chuyển tab.',
+                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
+                      ),
+                    ],
+                  ),
+                  backgroundColor: Colors.orange.shade800,
+                  behavior: SnackBarBehavior.floating,
+                  duration: const Duration(seconds: 2),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              );
+              return; // Chặn chuyển tab
+            }
+            setState(() => _currentIndex = index);
+          },
           type: BottomNavigationBarType.fixed,
           backgroundColor: const Color(0xFF52B794), // Màu chính #52B794
           selectedItemColor: Colors.white,

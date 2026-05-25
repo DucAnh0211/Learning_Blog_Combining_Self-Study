@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "270072710156",
+    "project_id": "learning-blog-51d7a",
+    "storage_bucket": "learning-blog-51d7a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:270072710156:android:993a361fb466b7a6771a29",
+        "android_client_info": {
+          "package_name": "com.example.fe_mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDr7erliLr6j9euiTdTnt_uR7dLRMJsVdg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

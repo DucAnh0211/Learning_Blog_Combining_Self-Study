@@ -8,5 +8,6 @@ namespace backend_assignment_and_management_project.Application.Interfaces
         Task<IEnumerable<NotificationDto>> GetUserNotificationsAsync(Guid userId);
         Task MarkAsReadAsync(Guid notificationId);
         Task MarkAllAsReadAsync(Guid userId);
+        Task RegisterFcmTokenAsync(Guid userId, string token);
     }
 }

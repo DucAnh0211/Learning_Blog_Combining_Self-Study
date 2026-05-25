@@ -1,4 +1,5 @@
 using backend_assignment_and_management_project.Application.Interfaces;
+using backend_assignment_and_management_project.Application.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -38,6 +39,14 @@ namespace backend_assignment_and_management_project.API.Controllers
             var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             await _notificationService.MarkAllAsReadAsync(userId);
             return NoContent();
+        }
+
+        [HttpPost("register-fcm-token")]
+        public async Task<IActionResult> RegisterFcmToken([FromBody] RegisterFcmTokenDto dto)
+        {
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            await _notificationService.RegisterFcmTokenAsync(userId, dto.Token);
+            return Ok(new { message = "FCM Token registered successfully." });
         }
     }
 }
