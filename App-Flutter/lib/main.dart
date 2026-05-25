@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:fe_mobile/core/network/signalr_service.dart';
 
 // --- IMPORT VIEWMODELS ---
 import 'package:fe_mobile/features/onboarding/presentation/viewmodels/subject_onboarding_viewmodel.dart';
@@ -89,12 +91,74 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
   @override
   void initState() {
     super.initState();
-    // Tải thông báo khi vào ứng dụng để hiện badge
-    Future.microtask(() {
-      if (mounted) {
-        context.read<NotificationProvider>().fetchNotifications();
+    
+    // Tải thông báo khi vào ứng dụng để hiện badge và kết nối SignalR
+    Future.microtask(() async {
+      if (!mounted) return;
+      
+      // 1. Tải danh sách thông báo từ API trước
+      await context.read<NotificationProvider>().fetchNotifications();
+      
+      // 2. Lấy auth_token từ SharedPreferences để kết nối SignalR
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      
+      if (token != null && mounted) {
+        // Cấu hình sự kiện khi có thông báo thời gian thực gửi từ Backend
+        SignalRService().onNotificationReceived = (notification) {
+          if (mounted) {
+            // Thêm thông báo mới trực tiếp vào Provider để cập nhật UI tức thời
+            context.read<NotificationProvider>().addNotification(notification);
+            
+            // Hiển thị SnackBar bay lơ lửng (Floating) cực đẹp mắt!
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    const Icon(Icons.notifications_active, color: Colors.white, size: 28),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            notification.title,
+                            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 14),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            notification.content,
+                            style: const TextStyle(color: Colors.white70, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                backgroundColor: const Color(0xFF52B794), // Màu chủ đạo của dự án
+                behavior: SnackBarBehavior.floating,
+                duration: const Duration(seconds: 4),
+                margin: const EdgeInsets.all(12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            );
+          }
+        };
+
+        // Bắt đầu kết nối WebSocket SignalR
+        await SignalRService().initConnection(token);
       }
     });
+  }
+
+  @override
+  void dispose() {
+    // Ngắt kết nối SignalR khi Layout bị huỷ (ví dụ khi đăng xuất)
+    SignalRService().stopConnection();
+    super.dispose();
   }
 
   final List<Widget> _screens = [

@@ -77,10 +77,13 @@ namespace backend_assignment_and_management_project.Infrastructure.Services
 
                     if (!exists)
                     {
+                        // Chuyển đổi từ UTC sang múi giờ Việt Nam (UTC+7) để hiển thị chính xác giờ cho người dùng
+                        var localEndTime = task.EndTime.Value.AddHours(7);
+                        
                         await notificationService.CreateNotificationAsync(
                             task.UserId,
                             "Sắp hết hạn!",
-                            $"Công việc '{task.Title}' sẽ hết hạn vào lúc {task.EndTime:HH:mm}.",
+                            $"Công việc '{task.Title}' sẽ hết hạn vào lúc {localEndTime:HH:mm}.",
                             "DeadlineApproaching",
                             task.Id
                         );

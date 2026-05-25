@@ -25,14 +25,14 @@ class NotificationModel {
 
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
     return NotificationModel(
-      id: json['id'],
-      title: json['title'],
-      content: json['content'],
-      type: json['type'],
+      id: json['id'] ?? '',
+      title: json['title'] ?? '',
+      content: json['content'] ?? '',
+      type: json['type'] ?? '',
       targetId: json['targetId'],
       actorId: json['actorId'],
-      actorName: json['actor']?['name'],
-      actorAvatar: json['actor']?['avatarUrl'],
+      actorName: json['actorName'] ?? json['actor']?['name'],
+      actorAvatar: json['actorAvatar'] ?? json['actor']?['avatarUrl'],
       isRead: json['isRead'] ?? false,
       createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
     );

@@ -77,4 +77,11 @@ class NotificationProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  void addNotification(NotificationModel notification) {
+    // Tránh trùng lặp nếu trùng id
+    if (_notifications.any((n) => n.id == notification.id)) return;
+    _notifications.insert(0, notification);
+    notifyListeners();
+  }
 }

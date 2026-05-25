@@ -8,6 +8,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.OpenApi.Models;
 using backend_assignment_and_management_project.Domain.Entities;
+using backend_assignment_and_management_project.API.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -87,7 +88,25 @@ builder.Services.AddAuthentication(options =>
         ValidateLifetime = true,
         ClockSkew = TimeSpan.Zero
     };
+
+    // Configure JWT Bearer to support Query String for SignalR Connections
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            var path = context.HttpContext.Request.Path;
+            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+            {
+                context.Token = accessToken;
+            }
+            return Task.CompletedTask;
+        }
+    };
 });
+
+// Register SignalR Services
+builder.Services.AddSignalR();
 
 // 5. Đăng ký các Service (Dependency Injection)
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -99,6 +118,7 @@ builder.Services.AddScoped<IStorageService, MinioStorageService>();
 builder.Services.AddScoped<IUserActivityLogService, UserActivityLogService>();
 builder.Services.AddScoped<IStatisticsService, StatisticsService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<IRealtimeNotificationService, backend_assignment_and_management_project.API.Services.RealtimeNotificationService>();
 builder.Services.AddHostedService<DeadlineNotificationService>();
 
 var app = builder.Build();
@@ -124,6 +144,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<NotificationHub>("/hubs/notification");
 
 // Seed Data
 using (var scope = app.Services.CreateScope())

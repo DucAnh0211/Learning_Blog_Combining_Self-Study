@@ -10,11 +10,16 @@ namespace backend_assignment_and_management_project.Infrastructure.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly IStorageService _storageService;
+        private readonly IRealtimeNotificationService _realtimeNotificationService;
 
-        public NotificationService(ApplicationDbContext context, IStorageService storageService)
+        public NotificationService(
+            ApplicationDbContext context, 
+            IStorageService storageService,
+            IRealtimeNotificationService realtimeNotificationService)
         {
             _context = context;
             _storageService = storageService;
+            _realtimeNotificationService = realtimeNotificationService;
         }
 
         public async Task CreateNotificationAsync(Guid userId, string title, string content, string type, Guid? targetId = null, Guid? actorId = null)
@@ -33,6 +38,36 @@ namespace backend_assignment_and_management_project.Infrastructure.Services
 
             _context.Notifications.Add(notification);
             await _context.SaveChangesAsync();
+
+            // Fetch actor info if present to enrich the notification payload
+            string? actorName = null;
+            string? actorAvatar = null;
+            if (actorId.HasValue)
+            {
+                var actor = await _context.Users.FindAsync(actorId.Value);
+                if (actor != null)
+                {
+                    actorName = actor.Name;
+                    actorAvatar = !string.IsNullOrEmpty(actor.AvatarUrl) ? await _storageService.GetPresignedUrlAsync(actor.AvatarUrl) : null;
+                }
+            }
+
+            var dto = new NotificationDto
+            {
+                Id = notification.Id,
+                Title = notification.Title,
+                Content = notification.Content,
+                Type = notification.Type,
+                TargetId = notification.TargetId,
+                ActorId = notification.ActorId,
+                ActorName = actorName,
+                ActorAvatar = actorAvatar,
+                IsRead = notification.IsRead,
+                CreatedAt = notification.CreatedAt
+            };
+
+            // Trigger real-time push via SignalR
+            await _realtimeNotificationService.SendNotificationToUserAsync(userId, dto);
         }
 
         public async Task<IEnumerable<NotificationDto>> GetUserNotificationsAsync(Guid userId)
