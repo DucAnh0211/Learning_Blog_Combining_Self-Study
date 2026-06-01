@@ -20,7 +20,6 @@ import 'package:fe_mobile/features/community/presentation/views/feed_screen.dart
 import 'package:fe_mobile/features/task_management/presentation/views/todo_screen.dart';
 import 'package:fe_mobile/features/focus/presentation/views/focus_screen.dart';
 import 'package:fe_mobile/features/profile/presentation/views/profile_screen.dart';
-import 'package:fe_mobile/features/profile/presentation/views/profile_logged_out_view.dart';
 
 import 'package:fe_mobile/features/auth/presentation/views/login_screen.dart';
 
