@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 class KioskService {
@@ -9,7 +10,7 @@ class KioskService {
       final bool result = await _channel.invokeMethod('startKiosk');
       return result;
     } on PlatformException catch (e) {
-      print("Lỗi kích hoạt Kiosk Mode: ${e.message}");
+      debugPrint("Lỗi kích hoạt Kiosk Mode: ${e.message}");
       return false;
     }
   }
@@ -20,7 +21,7 @@ class KioskService {
       final bool result = await _channel.invokeMethod('stopKiosk');
       return result;
     } on PlatformException catch (e) {
-      print("Lỗi tắt Kiosk Mode: ${e.message}");
+      debugPrint("Lỗi tắt Kiosk Mode: ${e.message}");
       return false;
     }
   }
@@ -31,7 +32,7 @@ class KioskService {
       final bool result = await _channel.invokeMethod('isKioskEnabled');
       return result;
     } on PlatformException catch (e) {
-      print("Lỗi kiểm tra Kiosk Mode: ${e.message}");
+      debugPrint("Lỗi kiểm tra Kiosk Mode: ${e.message}");
       return false;
     }
   }
