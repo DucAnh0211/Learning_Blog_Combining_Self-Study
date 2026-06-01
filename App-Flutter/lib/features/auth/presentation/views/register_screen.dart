@@ -28,7 +28,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       try {
         final profileVM = context.read<ProfileViewModel>();
         await profileVM.signUp(_nameController.text, _emailController.text, _passwordController.text);
-        // Sau khi đăng ký và đăng nhập thành công, main.dart sẽ tự chuyển màn hình
+        // Sau khi đăng ký và đăng nhập thành công, đóng màn hình đăng ký để lộ ra MainLayoutScreen
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -215,15 +218,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                           GestureDetector(
                             onTap: () {
-                              Navigator.pushReplacement(
-                                context,
-                                PageRouteBuilder(
-                                  pageBuilder: (context, animation, secondaryAnimation) => const LoginScreen(),
-                                  transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                                    return FadeTransition(opacity: animation, child: child);
-                                  },
-                                ),
-                              );
+                              Navigator.pop(context);
                             },
                             child: Text(
                               'Login now',
