@@ -3,7 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:fe_mobile/features/auth/presentation/widgets/auth_text_field.dart';
 import 'package:fe_mobile/features/auth/presentation/widgets/primary_button.dart';
-import 'package:fe_mobile/features/auth/presentation/views/login_screen.dart';
 import 'package:fe_mobile/features/profile/presentation/viewmodels/profile_viewmodel.dart';
 
 class RegisterScreen extends StatefulWidget {
