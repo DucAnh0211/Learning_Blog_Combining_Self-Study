@@ -32,18 +32,55 @@ import 'package:google_fonts/google_fonts.dart';
 class TestHttpOverrides extends HttpOverrides {
   @override
   HttpClient createHttpClient(SecurityContext? context) {
-    return MockHttpClient();
+    return MockHttpClient(super.createHttpClient(context));
   }
 }
 
 class MockHttpClient implements HttpClient {
+  final HttpClient _innerClient;
+  MockHttpClient(this._innerClient);
+
   @override
   Future<HttpClientRequest> openUrl(String method, Uri url) async {
-    return MockHttpClientRequest(url);
+    // Chỉ mock các API liên quan tới localhost/emulator, cho phép các request tải font thực tế chạy qua mạng
+    if (url.host == '10.0.2.2' || url.host == 'localhost' || url.host == '127.0.0.1') {
+      return MockHttpClientRequest(url);
+    }
+    return _innerClient.openUrl(method, url);
   }
 
   @override
-  dynamic noSuchMethod(Invocation invocation) => null;
+  set connectionTimeout(Duration? value) => _innerClient.connectionTimeout = value;
+  @override
+  Duration? get connectionTimeout => _innerClient.connectionTimeout;
+
+  @override
+  set userAgent(String? value) => _innerClient.userAgent = value;
+  @override
+  String? get userAgent => _innerClient.userAgent;
+
+  @override
+  set autoUncompress(bool value) => _innerClient.autoUncompress = value;
+  @override
+  bool get autoUncompress => _innerClient.autoUncompress;
+
+  @override
+  set idleTimeout(Duration value) => _innerClient.idleTimeout = value;
+  @override
+  Duration get idleTimeout => _innerClient.idleTimeout;
+
+  @override
+  set maxConnectionsPerHost(int? value) => _innerClient.maxConnectionsPerHost = value;
+  @override
+  int? get maxConnectionsPerHost => _innerClient.maxConnectionsPerHost;
+
+  @override
+  void close({bool force = false}) => _innerClient.close(force: force);
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) {
+    return null;
+  }
 }
 
 class MockHttpClientRequest implements HttpClientRequest {
@@ -65,6 +102,18 @@ class MockHttpClientRequest implements HttpClientRequest {
   dynamic noSuchMethod(Invocation invocation) {
     if (invocation.memberName == #cookies) {
       return <Cookie>[];
+    }
+    if (invocation.memberName == #persistentConnection) {
+      return true;
+    }
+    if (invocation.memberName == #followRedirects) {
+      return true;
+    }
+    if (invocation.memberName == #maxRedirects) {
+      return 5;
+    }
+    if (invocation.memberName == #contentLength) {
+      return -1;
     }
     return null;
   }
@@ -201,6 +250,15 @@ class MockHttpClientResponse extends Stream<List<int>> implements HttpClientResp
     if (invocation.memberName == #redirects) {
       return <RedirectInfo>[];
     }
+    if (invocation.memberName == #persistentConnection) {
+      return true;
+    }
+    if (invocation.memberName == #isRedirect) {
+      return false;
+    }
+    if (invocation.memberName == #contentLength) {
+      return -1;
+    }
     return null;
   }
 }
@@ -233,9 +291,6 @@ class MockAuthServiceE2E extends AuthService {
 }
 
 void main() {
-  // Tắt tự động tải font từ Google Fonts qua HTTP khi chạy test
-  GoogleFonts.config.allowRuntimeFetching = false;
-
   // Khởi tạo binding cho integration test
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   
