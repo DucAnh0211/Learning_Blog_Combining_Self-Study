@@ -121,16 +121,23 @@ class MockHttpClientRequest implements HttpClientRequest {
 
 class MockHttpHeaders implements HttpHeaders {
   @override
-  void forEach(void Function(String name, List<String> values) f) {}
+  void forEach(void Function(String name, List<String> values) f) {
+    f('content-type', ['application/json; charset=utf-8']);
+  }
 
   @override
-  List<String>? operator [](String name) => [];
+  List<String>? operator [](String name) {
+    if (name.toLowerCase() == 'content-type') {
+      return ['application/json; charset=utf-8'];
+    }
+    return [];
+  }
+
+  @override
+  ContentType? get contentType => ContentType.json;
 
   @override
   dynamic noSuchMethod(Invocation invocation) {
-    if (invocation.memberName == #contentType) {
-      return null;
-    }
     return null;
   }
 }
@@ -152,6 +159,9 @@ class MockHttpClientResponse extends Stream<List<int>> implements HttpClientResp
 
   @override
   HttpHeaders get headers => MockHttpHeaders();
+
+  @override
+  ContentType? get contentType => ContentType.json;
 
   @override
   StreamSubscription<List<int>> listen(
