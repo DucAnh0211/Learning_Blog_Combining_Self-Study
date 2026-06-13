@@ -24,6 +24,7 @@ import 'package:fe_mobile/features/focus/presentation/views/focus_screen.dart';
 import 'package:fe_mobile/features/profile/presentation/views/profile_screen.dart';
 import 'package:fe_mobile/features/notifications/presentation/providers/notification_provider.dart';
 import 'package:fe_mobile/features/notifications/data/repositories/notification_repository.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 // =========================================================================
 // MOCK HTTP OVERRIDES - INTERCEPT TOÀN BỘ CÁC YÊU CẦU MẠNG DÙNG TRONG TESTS
@@ -85,7 +86,7 @@ class MockHttpHeaders implements HttpHeaders {
   }
 }
 
-class MockHttpClientResponse implements HttpClientResponse {
+class MockHttpClientResponse extends Stream<List<int>> implements HttpClientResponse {
   final Uri url;
   MockHttpClientResponse(this.url);
 
@@ -232,6 +233,9 @@ class MockAuthServiceE2E extends AuthService {
 }
 
 void main() {
+  // Tắt tự động tải font từ Google Fonts qua HTTP khi chạy test
+  GoogleFonts.config.allowRuntimeFetching = false;
+
   // Khởi tạo binding cho integration test
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   
