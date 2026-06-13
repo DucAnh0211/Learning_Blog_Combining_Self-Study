@@ -183,46 +183,7 @@ Bộ kiểm thử của Frontend Mobile bao gồm **7 tệp kiểm thử chuyên
 
 ---
 
-## PHẦN 3: BACKEND API (`backend_assignment_and_deadline_management_project`)
-
-Bộ kiểm thử tích hợp (Integration Tests) cho API Backend được viết bằng **C# / xUnit** nhằm kiểm thử toàn trình đầu-cuối của các endpoint bằng cách khởi tạo server in-memory kết hợp database ảo (InMemory Database).
-
-### 1. Kiểm thử Tích hợp API: `AuthController`
-*   **Tệp nguồn:** `backend_assignment_and_management_project.API/Controllers/AuthController.cs`
-*   **Tệp kiểm thử:** `backend_assignment_and_management_project.Tests/Controllers/AuthControllerTests.cs`
-
-| ID | Tên Ca Kiểm Thử | Kịch Bản & Hành Động | Kết Quả Kỳ Vọng (Expected Output) |
-|:---|:---|:---|:---|
-| **API_AUTH_01** | Đăng ký và Đăng nhập thành công | Đăng ký tài khoản mới $\rightarrow$ Gọi API Đăng nhập với tài khoản đó. | - Phản hồi HTTP 200 OK.<br>- Trả về đầy đủ JWT Token xác thực và thông tin User chính xác. |
-| **API_AUTH_02** | Đăng nhập sai mật khẩu | Gọi API đăng nhập với email chưa tồn tại hoặc sai mật khẩu. | - Phản hồi HTTP 401 Unauthorized. |
-
----
-
-### 2. Kiểm thử Tích hợp API: `TodosController`
-*   **Tệp nguồn:** `backend_assignment_and_management_project.API/Controllers/TodosController.cs`
-*   **Tệp kiểm thử:** `backend_assignment_and_management_project.Tests/Controllers/TodosControllerTests.cs`
-
-| ID | Tên Ca Kiểm Thử | Kịch Bản & Hành Động | Kết Quả Kỳ Vọng (Expected Output) |
-|:---|:---|:---|:---|
-| **API_TODO_01** | Vòng đời Todo thành công (CRUD) | 1. Đăng ký & Đăng nhập lấy Token.<br>2. Gửi POST tạo Todo mới.<br>3. Gửi GET lấy danh sách.<br>4. Gửi PATCH đảo trạng thái.<br>5. Gửi DELETE xóa Todo. | - Tạo mới: HTTP 201 Created kèm TodoTaskDto.<br>- Get list: HTTP 200 OK chứa Task vừa tạo.<br>- Toggle: HTTP 200 OK với IsCompleted == true.<br>- Delete: HTTP 204 NoContent.<br>- Get by ID sau xóa: HTTP 404 NotFound. |
-| **API_TODO_02** | Chặn truy cập không xác thực | Gọi GET `/api/todos` nhưng không đính kèm JWT Token trong request header. | - Phản hồi HTTP 401 Unauthorized từ middleware xác thực. |
-
----
-
-### 3. Kiểm thử Tích hợp API: `UsersController` (Bảo mật & Quản lý Người dùng)
-*   **Tệp nguồn:** `backend_assignment_and_management_project.API/Controllers/UsersController.cs`
-*   **Tệp kiểm thử:** `backend_assignment_and_management_project.Tests/Controllers/UsersControllerTests.cs`
-
-| ID | Tên Ca Kiểm Thử | Kịch Bản & Hành Động | Kết Quả Kỳ Vọng (Expected Output) |
-|:---|:---|:---|:---|
-| **API_USER_01** | Lấy bảng xếp hạng điểm thành công | Gửi yêu cầu GET tới `/api/users/leaderboard?limit=5` kèm token xác thực. | - Phản hồi HTTP 200 OK.<br>- Trả về danh sách bảng xếp hạng học tập chứa thông tin UserResponse. |
-| **API_USER_02** | Chặn người dùng thường vào API Admin | Đăng nhập tài khoản User thường $\rightarrow$ Gửi yêu cầu GET tới `/api/users` (API lấy toàn bộ danh sách). | - Phản hồi **HTTP 403 Forbidden** (Xác minh cơ chế phân quyền Role-based hoạt động chính xác). |
-| **API_USER_03** | Cấp quyền Admin truy cập danh sách | Đăng nhập bằng tài khoản System Admin mặc định $\rightarrow$ Gửi yêu cầu GET tới `/api/users`. | - Phản hồi **HTTP 200 OK** thành công.<br>- Trả về danh sách đầy đủ toàn bộ người dùng trong hệ thống. |
-| **API_USER_04** | Cập nhật hồ sơ cá nhân | Gửi yêu cầu PUT tới `/api/users/profile` thay đổi Name và AvatarUrl. | - Phản hồi HTTP 200 OK.<br>- Trả về thông tin cá nhân mới cập nhật trùng khớp với payload gửi lên. |
-
----
-
-## PHẦN 4: HƯỚNG DẪN CHẠY HỆ THỐNG KIỂM THỬ TỰ ĐỘNG
+## PHẦN 3: HƯỚNG DẪN CHẠY HỆ THỐNG KIỂM THỬ TỰ ĐỘNG
 
 ### 1. Chạy thủ công trên máy phát triển
 Mở PowerShell tại thư mục gốc của dự án và chạy các dòng lệnh sau:
@@ -241,20 +202,13 @@ Mở PowerShell tại thư mục gốc của dự án và chạy các dòng lệ
     flutter test
     ```
 
-*   **API Backend:**
-    ```powershell
-    cd backend_assignment_and_deadline_management_project
-    # Thực thi bộ kiểm thử tích hợp (Integration Tests)
-    dotnet test
-    ```
-
 > [!NOTE]
-> Để giữ hệ thống kiểm thử luôn ổn định và tránh phụ thuộc vào trạng thái kết nối Internet hay máy chủ thật, tệp `integration_test/app_test.dart` kết nối live đã được loại bỏ. Tất cả các ca kiểm thử tương đương đã được tích hợp và phủ cực kỳ chi tiết thông qua bộ widget & integration tests mô phỏng (Mocking) độc lập chạy cực nhanh và đạt độ tin cậy tuyệt đối.
+> Để giữ hệ thống kiểm thử luôn ổn định và tránh phụ thuộc vào trạng thái kết nối Internet hay máy chủ thật, tệp `integration_test/app_test.dart` chạy hoàn toàn dưới chế độ Hermetic Mocking độc lập, chạy cực nhanh và đạt độ tin cậy tuyệt đối mà không cần kết nối tới Backend thực tế.
 
 ### 2. Hoạt động tự động trên GitHub Actions (CI)
 Mỗi khi bạn thực hiện `git push` hoặc gửi một `Pull Request` lên nhánh `main`, hệ thống tích hợp liên tục (CI) của chúng ta sẽ tự động kích hoạt thực hiện:
-1.  **Thiết lập môi trường:** Khởi động hệ điều hành ảo Ubuntu, cài đặt phiên bản Java 17 (đối với Android Mobile), .NET SDK (đối với Backend) và SDK Flutter phiên bản ổn định (`3.38.7`).
+1.  **Thiết lập môi trường:** Khởi động hệ điều hành ảo Ubuntu, cài đặt phiên bản Java 17 (đối với Android Mobile), .NET SDK (để build Backend) và SDK Flutter phiên bản ổn định (`3.38.7`).
 2.  **Cài đặt thư viện:** Chạy `flutter pub get` để tải các thư viện của dự án.
 3.  **Phân tích mã nguồn tĩnh:** Chạy `flutter analyze` để phát hiện cảnh báo và lỗi cú pháp.
-4.  **Kiểm thử tự động:** Thực thi toàn bộ các file Unit và Widget test nằm trong thư mục `test/` bằng lệnh `flutter test` và `dotnet test`.
+4.  **Kiểm thử tự động:** Thực thi toàn bộ các file Unit và Widget test nằm trong thư mục `test/` bằng lệnh `flutter test`.
 5.  **Đóng gói sản phẩm (Build Verification):** Biên dịch thử sản phẩm (`flutter build apk --debug` với mobile, `flutter build web` với admin, và `dotnet build` với backend) để chắc chắn mã nguồn không bị lỗi đóng gói trước khi merge.
