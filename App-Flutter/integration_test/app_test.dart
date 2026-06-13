@@ -50,6 +50,36 @@ class MockHttpClient implements HttpClient {
   }
 
   @override
+  Future<HttpClientRequest> get(String host, int port, String path) => open('get', host, port, path);
+  @override
+  Future<HttpClientRequest> getUrl(Uri url) => openUrl('get', url);
+  @override
+  Future<HttpClientRequest> post(String host, int port, String path) => open('post', host, port, path);
+  @override
+  Future<HttpClientRequest> postUrl(Uri url) => openUrl('post', url);
+  @override
+  Future<HttpClientRequest> put(String host, int port, String path) => open('put', host, port, path);
+  @override
+  Future<HttpClientRequest> putUrl(Uri url) => openUrl('put', url);
+  @override
+  Future<HttpClientRequest> delete(String host, int port, String path) => open('delete', host, port, path);
+  @override
+  Future<HttpClientRequest> deleteUrl(Uri url) => openUrl('delete', url);
+  @override
+  Future<HttpClientRequest> head(String host, int port, String path) => open('head', host, port, path);
+  @override
+  Future<HttpClientRequest> headUrl(Uri url) => openUrl('head', url);
+  @override
+  Future<HttpClientRequest> patch(String host, int port, String path) => open('patch', host, port, path);
+  @override
+  Future<HttpClientRequest> patchUrl(Uri url) => openUrl('patch', url);
+  @override
+  Future<HttpClientRequest> open(String method, String host, int port, String path) {
+    final url = Uri(scheme: 'http', host: host, port: port, path: path);
+    return openUrl(method, url);
+  }
+
+  @override
   set connectionTimeout(Duration? value) => _innerClient.connectionTimeout = value;
   @override
   Duration? get connectionTimeout => _innerClient.connectionTimeout;
@@ -131,6 +161,14 @@ class MockHttpHeaders implements HttpHeaders {
       return ['application/json; charset=utf-8'];
     }
     return [];
+  }
+
+  @override
+  String? value(String name) {
+    if (name.toLowerCase() == 'content-type') {
+      return 'application/json; charset=utf-8';
+    }
+    return null;
   }
 
   @override
@@ -300,6 +338,14 @@ class MockAuthServiceE2E extends AuthService {
   }
 }
 
+Future<void> settleApp(WidgetTester tester) async {
+  // Bơm từng bước thời gian ngắn để các quá trình chuyển tiếp màn hình hoàn tất
+  // mà không bị treo bởi các hoạt ảnh lặp vô hạn (như chiếc tre đung đưa).
+  for (int i = 0; i < 5; i++) {
+    await tester.pump(const Duration(milliseconds: 200));
+  }
+}
+
 void main() {
   // Khởi tạo binding cho integration test
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -309,6 +355,15 @@ void main() {
 
   group('Frontend Hermetic E2E Integration Test', () {
     testWidgets('Full User E2E Flow (Login -> Tab Switch -> Profile -> Logout)', (WidgetTester tester) async {
+      // Thiết lập kích thước màn hình giả lập di động
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
       // Thiết lập SharedPreferences giả lập ban đầu
       SharedPreferences.setMockInitialValues({});
       
@@ -340,7 +395,7 @@ void main() {
       );
 
       // Đợi màn hình đăng nhập hiển thị hoàn toàn
-      await tester.pumpAndSettle();
+      await settleApp(tester);
 
       // 1. Kiểm tra xem màn hình login đã hiển thị đúng các UI cơ bản
       expect(find.byType(LoginScreen), findsOneWidget);
@@ -359,7 +414,7 @@ void main() {
 
       // Click vào button Login
       await tester.tap(find.widgetWithText(PrimaryButton, 'Login'));
-      await tester.pumpAndSettle();
+      await settleApp(tester);
 
       // Xác minh xem Login của AuthService đã được gọi đúng tham số chưa
       expect(mockAuthService.loginCalled, isTrue);
@@ -370,21 +425,27 @@ void main() {
 
       // 2. Chuyển sang Tab: To-do
       await tester.tap(find.text('To-do').last);
-      await tester.pumpAndSettle();
+      await settleApp(tester);
       expect(find.byType(TodoScreen), findsOneWidget);
       
-      // Xác minh dữ liệu Todo từ Mock API response hiển thị chính xác
-      expect(find.text('Math Homework'), findsOneWidget);
+      // Xác minh dữ liệu Todo từ Mock API response hiển thị chính xác trong danh sách công việc
+      expect(
+        find.descendant(
+          of: find.byType(TaskCardWidget),
+          matching: find.text('Math Homework'),
+        ),
+        findsOneWidget,
+      );
 
       // 3. Chuyển sang Tab: Focus
       await tester.tap(find.text('Focus').last);
-      await tester.pumpAndSettle();
+      await settleApp(tester);
       expect(find.byType(FocusScreen), findsOneWidget);
       expect(find.text('Start'), findsOneWidget);
 
       // 4. Chuyển sang Tab: Profile
       await tester.tap(find.text('Profile').last);
-      await tester.pumpAndSettle();
+      await settleApp(tester);
       expect(find.byType(ProfileScreen), findsOneWidget);
       
       // Xác minh thông tin user hiển thị đúng
@@ -392,7 +453,7 @@ void main() {
 
       // 5. Đăng xuất (Logout)
       await tester.tap(find.text('Logout'));
-      await tester.pumpAndSettle();
+      await settleApp(tester);
 
       // Xác minh quay về màn hình Login thành công
       expect(find.byType(LoginScreen), findsOneWidget);
